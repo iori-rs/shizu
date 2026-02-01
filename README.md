@@ -1,16 +1,17 @@
 # shizu
 
-A high-performance HLS proxy server that transparently decrypts DRM-protected streams. Built with Rust for speed and reliability.
+A high-performance HLS proxy server with powerful stream transformation capabilities. Built with Rust for speed and reliability.
 
 ## Features
 
-- **DRM Decryption** - Supports SAMPLE-AES (MPEG-TS/AAC), SAMPLE-AES-CTR, and CENC (fMP4)
-- **Manifest Transformation** - Rewrites HLS playlists on-the-fly to proxy through the server
+- **Stream Transformation** - Rule-based M3U8 playlist rewriting with extensible transform pipeline
+- **Manifest Proxying** - Fetches and transforms HLS manifests on-the-fly
+- **Segment Proxying** - Proxies media segments with optional processing
 - **Init Segment Caching** - LRU cache for fMP4 initialization segments
-- **Header Proxying** - Preserves custom headers for authenticated streams
+- **Header Forwarding** - Preserves custom headers for authenticated streams
 - **Byte Range Support** - Handles partial segment requests
-- **Configurable CORS** - Works with web-based players
-- **Structured Logging** - Iceberg integration for analytics
+- **Configurable CORS** - Works seamlessly with web-based players
+- **Structured Logging** - Iceberg integration for analytics and monitoring
 
 ## Installation
 
@@ -54,18 +55,18 @@ Fetches and transforms an HLS playlist, rewriting URLs to proxy through shizu.
 | `url` | Yes | Original manifest URL |
 | `h` | No | Base64-encoded headers for manifest requests |
 | `sh` | No | Base64-encoded headers for segment requests |
-| `k` | No | Decryption key(s) in `kid:key` or `key` format |
-| `decrypt` | No | Enable decryption (`true`/`false`) |
+| `k` | No | Processing key(s) in `kid:key` or `key` format |
+| `decrypt` | No | Enable segment processing (`true`/`false`) |
 
 #### `GET /segment`
 
-Fetches, decrypts, and returns a media segment.
+Fetches and processes a media segment.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `url` | Yes | Original segment URL |
-| `m` | Yes | Decryption method: `ssa`, `ssa-ctr`, or `cenc` |
-| `k` | Yes | Decryption key(s) |
+| `m` | Yes | Processing method: `ssa`, `ssa-ctr`, or `cenc` |
+| `k` | Yes | Processing key(s) |
 | `iv` | No | Initialization vector (hex, with optional `0x` prefix) |
 | `h` | No | Base64-encoded request headers |
 | `br` | No | Byte range (`length@offset`) |
@@ -79,21 +80,21 @@ Health check endpoint. Returns `{"status": "ok", "version": "..."}`.
 
 ### Example
 
-Proxy a DRM-protected stream:
+Proxy an HLS stream:
 
 ```bash
 # Get the transformed manifest
-curl "http://localhost:8080/manifest?url=https://example.com/master.m3u8&k=abcd1234:deadbeef01234567890abcdef0123456&decrypt=true"
+curl "http://localhost:8080/manifest?url=https://example.com/master.m3u8"
 ```
 
-Point your HLS player at the manifest URL and it will automatically fetch decrypted segments through the proxy.
+Point your HLS player at the manifest URL and it will automatically fetch segments through the proxy.
 
 ## Architecture
 
 ```
 src/
 ├── cache/          # Init segment LRU cache
-├── decrypt/        # Decryption (iori-ssa, mp4decrypt)
+├── decrypt/        # Segment processing
 ├── hls/            # HLS type definitions
 ├── logging/        # Iceberg logging
 ├── proxy/          # HTTP client & header encoding
@@ -101,13 +102,20 @@ src/
 └── stream/         # Playlist processing & transformation
 ```
 
-## Decryption Methods
+## Stream Transformation
 
-| Method | Use Case | Library |
-|--------|----------|---------|
-| `ssa` | SAMPLE-AES for MPEG-TS/AAC | iori-ssa |
-| `ssa-ctr` | SAMPLE-AES-CTR for fMP4 | mp4decrypt |
-| `cenc` | Common Encryption for fMP4 | mp4decrypt |
+shizu uses a rule-based transformation pipeline for processing M3U8 playlists:
+
+- **Line Classification** - Parses each line to identify tags, URIs, and comments
+- **State Tracking** - Maintains playlist context (media sequence, current key, map info)
+- **Transform Rules** - Applies matching rules to rewrite content:
+  - `KeyRewriteRule` - Handles `#EXT-X-KEY` tags
+  - `MapRewriteRule` - Handles `#EXT-X-MAP` tags  
+  - `VariantProxyRule` - Rewrites variant stream URLs
+  - `MediaProxyRule` - Rewrites `#EXT-X-MEDIA` URIs
+  - `SegmentProxyRule` - Rewrites segment URLs
+
+The transformation pipeline is extensible - implement the `TransformRule` trait to add custom rules.
 
 ## License
 
