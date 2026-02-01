@@ -6,15 +6,19 @@ use std::sync::Arc;
 pub struct AppState {
     pub client: ProxyClient,
     pub init_cache: Arc<InitSegmentCache>,
-    pub server_base_url: url::Url,
 }
 
 impl AppState {
-    pub fn new(server_base_url: url::Url) -> Self {
+    pub fn new() -> Self {
         Self {
             client: ProxyClient::new(),
             init_cache: Arc::new(InitSegmentCache::new(100)),
-            server_base_url,
         }
+    }
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
     }
 }

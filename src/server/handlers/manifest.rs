@@ -44,7 +44,6 @@ pub async fn handle_manifest(
     // Create transform context
     let context = TransformContext::new(
         original_url,
-        state.server_base_url.clone(),
         params.h.clone(),
         params.sh.clone(),
         manifest_headers,

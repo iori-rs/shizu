@@ -140,7 +140,6 @@ mod tests {
     fn create_test_context() -> TransformContext {
         TransformContext::new(
             Url::parse("https://example.com/playlist.m3u8").unwrap(),
-            Url::parse("http://localhost:8080").unwrap(),
             None,
             None,
             HashMap::new(),

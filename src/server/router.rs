@@ -1,8 +1,4 @@
-use axum::{
-    http::Method,
-    routing::get,
-    Json, Router,
-};
+use axum::{http::Method, routing::get, Json, Router};
 use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
@@ -15,15 +11,7 @@ use super::{
 
 /// Create the application router.
 pub async fn create_router() -> anyhow::Result<Router> {
-    // Determine server base URL from environment or default
-    let host = std::env::var("EXTERNAL_HOST").unwrap_or_else(|_| "localhost".to_string());
-    let port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_string());
-    let scheme = std::env::var("EXTERNAL_SCHEME").unwrap_or_else(|_| "http".to_string());
-    
-    let base_url = format!("{}://{}:{}", scheme, host, port);
-    let server_base_url = url::Url::parse(&base_url)?;
-
-    let state = AppState::new(server_base_url);
+    let state = AppState::new();
 
     // Configure CORS
     let cors_origin = std::env::var("CORS_ALLOWED_ORIGIN").unwrap_or_else(|_| "*".to_string());

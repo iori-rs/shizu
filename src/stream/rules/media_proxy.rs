@@ -87,7 +87,6 @@ mod tests {
     fn create_test_context() -> TransformContext {
         TransformContext::new(
             Url::parse("https://cdn.example.com/master.m3u8").unwrap(),
-            Url::parse("http://localhost:8080").unwrap(),
             None,
             None,
             HashMap::new(),
@@ -118,6 +117,6 @@ mod tests {
         let result = rule.transform(line, &mut state, &context);
 
         assert_eq!(result.len(), 1);
-        assert!(result[0].contains("http://localhost:8080/manifest?"));
+        assert!(result[0].contains("/manifest?"));
     }
 }

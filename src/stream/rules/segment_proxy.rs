@@ -72,7 +72,7 @@ impl TransformRule for SegmentUrlProxyRule {
             init_byterange,
         );
 
-        vec![proxied.to_string()]
+        vec![proxied]
     }
 }
 
@@ -87,7 +87,6 @@ mod tests {
     fn create_context_with_decrypt() -> TransformContext {
         TransformContext::new(
             Url::parse("https://cdn.example.com/playlist.m3u8").unwrap(),
-            Url::parse("http://localhost:8080").unwrap(),
             None,
             None,
             HashMap::new(),
@@ -155,7 +154,7 @@ mod tests {
         let result = rule.transform("segment001.ts", &mut state, &context);
 
         assert_eq!(result.len(), 1);
-        assert!(result[0].starts_with("http://localhost:8080/segment.ts?"));
+        assert!(result[0].starts_with("/segment.ts?"));
         assert!(result[0].contains("m=ssa"));
     }
 }

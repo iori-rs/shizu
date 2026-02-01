@@ -29,9 +29,6 @@ shizu
 
 # Custom port
 PORT=3000 shizu
-
-# With external host for generated URLs
-EXTERNAL_HOST=my-proxy.example.com EXTERNAL_SCHEME=https shizu
 ```
 
 ### Environment Variables
@@ -40,8 +37,6 @@ EXTERNAL_HOST=my-proxy.example.com EXTERNAL_SCHEME=https shizu
 |----------|---------|-------------|
 | `HOST` | `0.0.0.0` | Bind address |
 | `PORT` | `8080` | Bind port |
-| `EXTERNAL_HOST` | `localhost` | Hostname used in generated URLs |
-| `EXTERNAL_SCHEME` | `http` | Scheme used in generated URLs |
 | `CORS_ALLOWED_ORIGIN` | `*` | CORS origin header |
 
 ### Endpoints

@@ -60,7 +60,7 @@ impl TransformRule for MapTagRewriteRule {
 
         // Rebuild the #EXT-X-MAP tag with proxied URI
         let mut result = String::from("#EXT-X-MAP:URI=\"");
-        result.push_str(proxied.as_str());
+        result.push_str(&proxied);
         result.push('"');
 
         // Note: we don't include BYTERANGE in output since it's encoded in the proxied URL
@@ -81,7 +81,6 @@ mod tests {
     fn create_context_with_decrypt() -> TransformContext {
         TransformContext::new(
             Url::parse("https://cdn.example.com/playlist.m3u8").unwrap(),
-            Url::parse("http://localhost:8080").unwrap(),
             None,
             None,
             HashMap::new(),
@@ -112,6 +111,6 @@ mod tests {
         let result = rule.transform(r#"#EXT-X-MAP:URI="init.mp4""#, &mut state, &context);
 
         assert_eq!(result.len(), 1);
-        assert!(result[0].starts_with("#EXT-X-MAP:URI=\"http://localhost:8080/segment.mp4?"));
+        assert!(result[0].starts_with("#EXT-X-MAP:URI=\"/segment.mp4?"));
     }
 }

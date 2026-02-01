@@ -36,7 +36,7 @@ impl TransformRule for VariantUrlProxyRule {
         // Build proxied manifest URL
         let proxied = context.build_manifest_url(&resolved);
 
-        vec![proxied.to_string()]
+        vec![proxied]
     }
 }
 
@@ -50,7 +50,6 @@ mod tests {
     fn create_test_context() -> TransformContext {
         TransformContext::new(
             Url::parse("https://cdn.example.com/master.m3u8").unwrap(),
-            Url::parse("http://localhost:8080").unwrap(),
             None,
             None,
             HashMap::new(),
@@ -91,7 +90,7 @@ mod tests {
         let result = rule.transform("720p/playlist.m3u8", &mut state, &context);
 
         assert_eq!(result.len(), 1);
-        assert!(result[0].starts_with("http://localhost:8080/manifest?"));
+        assert!(result[0].starts_with("/manifest?"));
         assert!(result[0].contains("url=https%3A%2F%2Fcdn.example.com%2F720p%2Fplaylist.m3u8"));
     }
 }
