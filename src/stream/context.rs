@@ -1,4 +1,4 @@
-use crate::{decrypt::DecryptionKey, Result};
+use crate::{decrypt::DecryptionKey, server::SigningKey, Result};
 use std::collections::HashMap;
 use url::Url;
 
@@ -25,6 +25,9 @@ pub struct TransformContext {
 
     /// Whether to decrypt DRM segments.
     pub decrypt_enabled: bool,
+
+    /// Signing key for generating signed URLs.
+    signing_key: SigningKey,
 }
 
 impl TransformContext {
@@ -36,6 +39,7 @@ impl TransformContext {
         segment_headers_map: HashMap<String, String>,
         decryption_key: Option<DecryptionKey>,
         decrypt_enabled: bool,
+        signing_key: SigningKey,
     ) -> Self {
         Self {
             original_url,
@@ -45,6 +49,7 @@ impl TransformContext {
             segment_headers_map,
             decryption_key,
             decrypt_enabled,
+            signing_key,
         }
     }
 
@@ -55,7 +60,8 @@ impl TransformContext {
 
     /// Build a relative URL for the /manifest endpoint.
     pub fn build_manifest_url(&self, target: &Url) -> String {
-        let mut params = vec![format!("url={}", urlencoding::encode(target.as_str()))];
+        let target_str = target.as_str();
+        let mut params = vec![format!("url={}", urlencoding::encode(target_str))];
 
         if let Some(h) = &self.manifest_headers {
             params.push(format!("h={}", urlencoding::encode(h)));
@@ -69,6 +75,10 @@ impl TransformContext {
         if self.decrypt_enabled {
             params.push("decrypt=true".to_string());
         }
+
+        // Sign the target URL to prevent SSRF attacks
+        let signature = self.signing_key.sign(target_str);
+        params.push(format!("sig={}", signature));
 
         format!("/manifest?{}", params.join("&"))
     }
@@ -93,7 +103,8 @@ impl TransformContext {
             .map(|(_, ext)| ext)
             .unwrap_or("ts");
 
-        let mut params = vec![format!("url={}", urlencoding::encode(target.as_str()))];
+        let target_str = target.as_str();
+        let mut params = vec![format!("url={}", urlencoding::encode(target_str))];
 
         if let Some(sh) = &self.segment_headers {
             params.push(format!("h={}", urlencoding::encode(sh)));
@@ -117,6 +128,10 @@ impl TransformContext {
                 urlencoding::encode(&init_br.to_query_param())
             ));
         }
+
+        // Sign the target URL to prevent SSRF attacks
+        let signature = self.signing_key.sign(target_str);
+        params.push(format!("sig={}", signature));
 
         format!("/segment.{}?{}", ext, params.join("&"))
     }

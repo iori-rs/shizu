@@ -21,6 +21,12 @@ pub async fn handle_segment(
 ) -> Result<Response> {
     tracing::info!("Segment request: {}", params.url);
 
+    // Verify URL signature to prevent SSRF attacks
+    if !state.verify_signature(&params.url, params.sig.as_deref()) {
+        tracing::warn!("Invalid signature for URL: {}", params.url);
+        return Err(Error::InvalidSignature);
+    }
+
     // Parse decryption method
     let method = SegmentDecryptMethod::parse(&params.m)?;
 

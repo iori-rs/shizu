@@ -81,6 +81,7 @@ impl MediaTagProxyRule {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::server::SigningKey;
     use std::collections::HashMap;
     use url::Url;
 
@@ -93,6 +94,7 @@ mod tests {
             HashMap::new(),
             None,
             false,
+            SigningKey::test_key(),
         )
     }
 

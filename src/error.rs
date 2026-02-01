@@ -16,6 +16,9 @@ pub enum Error {
     #[error("Invalid URL: {0}")]
     InvalidUrl(String),
 
+    #[error("Invalid or missing URL signature")]
+    InvalidSignature,
+
     #[error("Invalid key format: {0}")]
     InvalidKeyFormat(String),
 
@@ -65,6 +68,7 @@ impl Error {
             Self::FetchFailed { .. } => "FETCH_FAILED",
             Self::FetchTimeout(_) => "FETCH_TIMEOUT",
             Self::InvalidUrl(_) => "INVALID_URL",
+            Self::InvalidSignature => "INVALID_SIGNATURE",
             Self::InvalidKeyFormat(_) => "INVALID_KEY_FORMAT",
             Self::InvalidKeyLength => "INVALID_KEY_LENGTH",
             Self::SingleKeyRequired => "SINGLE_KEY_REQUIRED",
@@ -84,6 +88,7 @@ impl Error {
         match self {
             Self::FetchFailed { .. } => StatusCode::BAD_GATEWAY,
             Self::FetchTimeout(_) => StatusCode::GATEWAY_TIMEOUT,
+            Self::InvalidSignature => StatusCode::FORBIDDEN,
             Self::InvalidUrl(_)
             | Self::InvalidKeyFormat(_)
             | Self::InvalidKeyLength

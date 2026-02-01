@@ -81,6 +81,7 @@ mod tests {
     use super::*;
     use crate::decrypt::DecryptionKey;
     use crate::hls::{KeyInfo, KeyMethod};
+    use crate::server::SigningKey;
     use std::collections::HashMap;
     use url::Url;
 
@@ -93,6 +94,7 @@ mod tests {
             HashMap::new(),
             Some(DecryptionKey::parse("0123456789abcdef0123456789abcdef").unwrap()),
             true,
+            SigningKey::test_key(),
         )
     }
 

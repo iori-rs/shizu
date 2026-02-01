@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    Result,
+    Error, Result,
     decrypt::DecryptionKey,
     proxy::HeaderCodec,
     server::{params::ManifestParams, state::AppState},
@@ -18,6 +18,12 @@ pub async fn handle_manifest(
     Query(params): Query<ManifestParams>,
 ) -> Result<Response> {
     tracing::info!("Manifest request: {}", params.url);
+
+    // Verify URL signature to prevent SSRF attacks
+    if !state.verify_signature(&params.url, params.sig.as_deref()) {
+        tracing::warn!("Invalid signature for URL: {}", params.url);
+        return Err(Error::InvalidSignature);
+    }
 
     // Parse original URL
     let original_url = url::Url::parse(&params.url)?;
@@ -50,6 +56,7 @@ pub async fn handle_manifest(
         segment_headers,
         decryption_key,
         decrypt_enabled,
+        state.signing_key.clone(),
     );
 
     // Create processor with default rules

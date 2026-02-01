@@ -21,6 +21,11 @@ pub struct ManifestParams {
     /// Whether to decrypt DRM segments.
     #[serde(default)]
     pub decrypt: Option<bool>,
+
+    /// HMAC-SHA256 signature of the URL (hex encoded).
+    /// Required when SHIZU_SIGNING_KEY is set to prevent SSRF attacks.
+    #[serde(default)]
+    pub sig: Option<String>,
 }
 
 /// Query parameters for the /segment endpoint.
@@ -54,4 +59,9 @@ pub struct SegmentParams {
     /// Init segment byte range.
     #[serde(default)]
     pub init_br: Option<String>,
+
+    /// HMAC-SHA256 signature of the URL (hex encoded).
+    /// Required when SHIZU_SIGNING_KEY is set to prevent SSRF attacks.
+    #[serde(default)]
+    pub sig: Option<String>,
 }
