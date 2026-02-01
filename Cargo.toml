@@ -11,7 +11,7 @@ tower = "0.5"
 tower-http = { version = "0.6", features = ["cors", "trace"] }
 
 # HTTP client
-reqwest = { version = "0.12", features = ["stream"] }
+reqwest = { version = "0.13", features = ["stream"] }
 
 # Async streams
 futures = "0.3"
@@ -25,11 +25,11 @@ base64 = "0.22"
 
 # Decryption - use existing crates from iori ecosystem
 iori-ssa = "0.2"
-mp4decrypt = "0.4"
+mp4decrypt = "0.6"
 
 # Iceberg + R2
-iceberg = "0.4"
-object_store = { version = "0.12", features = ["aws"] }
+iceberg = "0.8"
+object_store = { version = "0.13", features = ["aws"] }
 parquet = { version = "54", features = ["arrow"] }
 arrow = "54"
 
@@ -44,5 +44,5 @@ hex = "0.4"
 thiserror = "2"
 anyhow = "1"
 bytes = "1"
-lru = "0.12"
+lru = "0.16"
 chrono = { version = "0.4", features = ["serde"] }

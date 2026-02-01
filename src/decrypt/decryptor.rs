@@ -1,4 +1,4 @@
-use crate::{hls::SegmentFormat, Error, Result};
+use crate::{Error, Result, hls::SegmentFormat};
 use bytes::Bytes;
 use std::io::Cursor;
 
@@ -114,8 +114,15 @@ impl SegmentDecryptor {
             None => data.to_vec(),
         };
 
-        // Use mp4decrypt crate
-        let decrypted = mp4decrypt::mp4decrypt(&full_data, keys, None)
+        // Build decryptor with keys using new builder API
+        let decryptor = mp4decrypt::Ap4CencDecryptingProcessor::new()
+            .keys(&keys)
+            .map_err(|e| Error::DecryptionFailed(e.to_string()))?
+            .build()
+            .map_err(|e| Error::DecryptionFailed(e.to_string()))?;
+
+        let decrypted = decryptor
+            .decrypt(&full_data, None)
             .map_err(|e| Error::DecryptionFailed(e.to_string()))?;
 
         Ok(Bytes::from(decrypted))
