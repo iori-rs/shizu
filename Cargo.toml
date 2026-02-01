@@ -1,0 +1,48 @@
+[package]
+name = "shizu"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# Web framework
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# HTTP client
+reqwest = { version = "0.12", features = ["stream"] }
+
+# Async streams
+futures = "0.3"
+async-stream = "0.3"
+tokio-util = { version = "0.7", features = ["io"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+
+# Decryption - use existing crates from iori ecosystem
+iori-ssa = "0.2"
+mp4decrypt = "0.4"
+
+# Iceberg + R2
+iceberg = "0.4"
+object_store = { version = "0.12", features = ["aws"] }
+parquet = { version = "54", features = ["arrow"] }
+arrow = "54"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Utilities
+url = "2"
+uuid = { version = "1", features = ["v4"] }
+hex = "0.4"
+thiserror = "2"
+anyhow = "1"
+bytes = "1"
+lru = "0.12"
+chrono = { version = "0.4", features = ["serde"] }

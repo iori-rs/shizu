@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shizu Link Generator</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen py-8">
+  <div class="max-w-2xl mx-auto px-4">
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <h1 class="text-2xl font-bold text-gray-800 mb-6">Shizu Link Generator</h1>
+      
+      <form id="form" class="space-y-4">
+        <!-- Server URL -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Server URL</label>
+          <input type="url" id="server" value="http://localhost:8080" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- M3U8 URL -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">M3U8 URL <span class="text-red-500">*</span></label>
+          <input type="url" id="m3u8" required placeholder="https://example.com/playlist.m3u8"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- Decryption Key -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Decryption Key (hex)</label>
+          <input type="text" id="key" placeholder="d297d65cb498f939520fafe2cfed4fd6" pattern="[a-fA-F0-9]*"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+        </div>
+
+        <!-- Headers -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Manifest Headers</label>
+            <textarea id="headers" rows="3" placeholder="Authorization: Bearer xxx
+User-Agent: Mozilla/5.0"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"></textarea>
+            <p class="text-xs text-gray-500 mt-1">One header per line: Name: Value</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Segment Headers</label>
+            <textarea id="segmentHeaders" rows="3" placeholder="Authorization: Bearer xxx
+User-Agent: Mozilla/5.0"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"></textarea>
+            <p class="text-xs text-gray-500 mt-1">One header per line: Name: Value</p>
+          </div>
+        </div>
+
+        <!-- Decrypt Toggle -->
+        <div class="flex items-center">
+          <input type="checkbox" id="decrypt" checked
+            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+          <label for="decrypt" class="ml-2 text-sm text-gray-700">Enable decryption</label>
+        </div>
+
+        <!-- Generate Button -->
+        <button type="submit" 
+          class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition">
+          Generate Link
+        </button>
+      </form>
+
+      <!-- Output -->
+      <div id="output" class="mt-6 hidden">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Generated URL</label>
+        <div class="relative">
+          <textarea id="result" readonly rows="4"
+            class="w-full px-3 py-2 pr-20 border border-gray-300 rounded-md bg-gray-50 font-mono text-sm break-all"></textarea>
+          <button type="button" id="copy"
+            class="absolute top-2 right-2 bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition">
+            Copy
+          </button>
+        </div>
+        <div class="mt-3 flex gap-2">
+          <a id="openLink" href="#" target="_blank"
+            class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm">
+            Open in Browser
+          </a>
+          <button type="button" id="playMpv"
+            class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition text-sm">
+            Copy mpv Command
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-center text-gray-500 text-sm mt-4">Shizu M3U8 Transform Server</p>
+  </div>
+
+  <script>
+    const form = document.getElementById('form');
+    const output = document.getElementById('output');
+    const result = document.getElementById('result');
+    const copyBtn = document.getElementById('copy');
+    const openLink = document.getElementById('openLink');
+    const playMpv = document.getElementById('playMpv');
+
+    function base64UrlEncode(str) {
+      return btoa(unescape(encodeURIComponent(str)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    }
+
+    function parseHeaders(text) {
+      const headers = {};
+      const lines = text.split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        const colonIndex = trimmed.indexOf(':');
+        if (colonIndex === -1) {
+          throw new Error(`Invalid header format: "${trimmed}"`);
+        }
+        const name = trimmed.slice(0, colonIndex).trim();
+        const value = trimmed.slice(colonIndex + 1).trim();
+        if (!name) {
+          throw new Error(`Empty header name in: "${trimmed}"`);
+        }
+        headers[name] = value;
+      }
+      return headers;
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const server = document.getElementById('server').value.replace(/\/$/, '');
+      const m3u8 = document.getElementById('m3u8').value;
+      const key = document.getElementById('key').value.trim();
+      const headersText = document.getElementById('headers').value.trim();
+      const segmentHeadersText = document.getElementById('segmentHeaders').value.trim();
+      const decrypt = document.getElementById('decrypt').checked;
+
+      const params = new URLSearchParams();
+      params.set('url', m3u8);
+
+      if (key) params.set('k', key);
+      if (decrypt) params.set('decrypt', 'true');
+
+      if (headersText) {
+        try {
+          const headers = parseHeaders(headersText);
+          params.set('h', base64UrlEncode(JSON.stringify(headers)));
+        } catch (err) {
+          alert('Manifest headers error: ' + err.message);
+          return;
+        }
+      }
+
+      if (segmentHeadersText) {
+        try {
+          const headers = parseHeaders(segmentHeadersText);
+          params.set('sh', base64UrlEncode(JSON.stringify(headers)));
+        } catch (err) {
+          alert('Segment headers error: ' + err.message);
+          return;
+        }
+      }
+
+      const url = `${server}/manifest?${params.toString()}`;
+      result.value = url;
+      openLink.href = url;
+      output.classList.remove('hidden');
+    });
+
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(result.value);
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => copyBtn.textContent = 'Copy', 1500);
+    });
+
+    playMpv.addEventListener('click', () => {
+      const cmd = `mpv "${result.value}"`;
+      navigator.clipboard.writeText(cmd);
+      playMpv.textContent = 'Copied!';
+      setTimeout(() => playMpv.textContent = 'Copy mpv Command', 1500);
+    });
+  </script>
+</body>
+</html>
