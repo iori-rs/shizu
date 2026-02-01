@@ -1,4 +1,4 @@
-use axum::{http::Method, routing::get, Json, Router};
+use axum::{Json, Router, http::Method, routing::get};
 use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
@@ -29,7 +29,6 @@ pub async fn create_router() -> anyhow::Result<Router> {
 
     let app = Router::new()
         .route("/manifest", get(handle_manifest))
-        .route("/segment", get(handle_segment))
         .route("/segment.{ext}", get(handle_segment))
         .route("/health", get(health_check))
         .layer(cors)

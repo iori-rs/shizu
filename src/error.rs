@@ -46,6 +46,9 @@ pub enum Error {
     #[error("Invalid IV format: {0}")]
     InvalidIv(String),
 
+    #[error("Unknown segment format: {0}")]
+    UnknownSegmentFormat(String),
+
     #[error("Internal error: {0}")]
     Internal(String),
 }
@@ -72,6 +75,7 @@ impl Error {
             Self::InvalidHeaderEncoding(_) => "INVALID_HEADER_ENCODING",
             Self::InvalidByteRange(_) => "INVALID_BYTE_RANGE",
             Self::InvalidIv(_) => "INVALID_IV",
+            Self::UnknownSegmentFormat(_) => "UNKNOWN_SEGMENT_FORMAT",
             Self::Internal(_) => "INTERNAL_ERROR",
         }
     }
@@ -87,7 +91,8 @@ impl Error {
             | Self::MultipleKeysRequired
             | Self::InvalidHeaderEncoding(_)
             | Self::InvalidByteRange(_)
-            | Self::InvalidIv(_) => StatusCode::BAD_REQUEST,
+            | Self::InvalidIv(_)
+            | Self::UnknownSegmentFormat(_) => StatusCode::BAD_REQUEST,
             Self::UnsupportedMethod(_) | Self::UnsupportedCombination { .. } => {
                 StatusCode::NOT_IMPLEMENTED
             }

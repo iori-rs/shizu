@@ -43,10 +43,6 @@ pub struct SegmentParams {
     /// Decryption method: ssa, ssa-ctr, cenc.
     pub m: String,
 
-    /// Segment format: ts, mp4, aac.
-    #[serde(default)]
-    pub f: Option<String>,
-
     /// Init segment URL (for fMP4).
     #[serde(default)]
     pub init: Option<String>,

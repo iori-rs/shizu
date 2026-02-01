@@ -1,21 +1,22 @@
 use axum::{
     body::Body,
-    extract::{Query, State},
+    extract::{Path, Query, State},
     http::header,
     response::{IntoResponse, Response},
 };
 
 use crate::{
+    Error, Result,
     decrypt::{DecryptionKey, SegmentDecryptMethod, SegmentDecryptor},
     hls::{ByteRange, SegmentFormat},
     proxy::HeaderCodec,
     server::{params::SegmentParams, state::AppState},
-    Error, Result,
 };
 
 /// Handle GET /segment requests.
 pub async fn handle_segment(
     State(state): State<AppState>,
+    path: Path<String>,
     Query(params): Query<SegmentParams>,
 ) -> Result<Response> {
     tracing::info!("Segment request: {}", params.url);
@@ -39,12 +40,8 @@ pub async fn handle_segment(
         .map(|br| ByteRange::parse(br))
         .transpose()?;
 
-    // Determine segment format
-    let format = params
-        .f
-        .as_ref()
-        .map(|f| SegmentFormat::parse(f))
-        .unwrap_or_else(|| SegmentFormat::from_url(&params.url));
+    // Determine segment format from path extension or URL
+    let format = SegmentFormat::from_extension(&path)?;
 
     // Fetch init segment if needed (for fMP4)
     let init_data = if let Some(ref init_url) = params.init {

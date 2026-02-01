@@ -33,11 +33,11 @@ PORT=3000 shizu
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `HOST` | `0.0.0.0` | Bind address |
-| `PORT` | `8080` | Bind port |
-| `CORS_ALLOWED_ORIGIN` | `*` | CORS origin header |
+| Variable              | Default   | Description        |
+| --------------------- | --------- | ------------------ |
+| `HOST`                | `0.0.0.0` | Bind address       |
+| `PORT`                | `8080`    | Bind port          |
+| `CORS_ALLOWED_ORIGIN` | `*`       | CORS origin header |
 
 ### Endpoints
 
@@ -45,29 +45,28 @@ PORT=3000 shizu
 
 Fetches and transforms an HLS playlist, rewriting URLs to proxy through shizu.
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `url` | Yes | Original manifest URL |
-| `h` | No | Base64-encoded headers for manifest requests |
-| `sh` | No | Base64-encoded headers for segment requests |
-| `k` | No | Processing key(s) in `kid:key` or `key` format |
-| `decrypt` | No | Enable segment processing (`true`/`false`) |
+| Parameter | Required | Description                                    |
+| --------- | -------- | ---------------------------------------------- |
+| `url`     | Yes      | Original manifest URL                          |
+| `h`       | No       | Base64-encoded headers for manifest requests   |
+| `sh`      | No       | Base64-encoded headers for segment requests    |
+| `k`       | No       | Processing key(s) in `kid:key` or `key` format |
+| `decrypt` | No       | Enable segment processing (`true`/`false`)     |
 
-#### `GET /segment`
+#### `GET /segment.{ext}`
 
-Fetches and processes a media segment.
+Fetches and processes a media segment. The format is determined by the URL extension (e.g., `/segment.ts`, `/segment.mp4`).
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `url` | Yes | Original segment URL |
-| `m` | Yes | Processing method: `ssa`, `ssa-ctr`, or `cenc` |
-| `k` | Yes | Processing key(s) |
-| `iv` | No | Initialization vector (hex, with optional `0x` prefix) |
-| `h` | No | Base64-encoded request headers |
-| `br` | No | Byte range (`length@offset`) |
-| `f` | No | Format hint: `ts`, `aac`, or `mp4` |
-| `init` | No | Init segment URL (for fMP4) |
-| `init_br` | No | Init segment byte range |
+| Parameter | Required | Description                                            |
+| --------- | -------- | ------------------------------------------------------ |
+| `url`     | Yes      | Original segment URL                                   |
+| `m`       | Yes      | Processing method: `ssa`, `ssa-ctr`, or `cenc`         |
+| `k`       | Yes      | Processing key(s)                                      |
+| `iv`      | No       | Initialization vector (hex, with optional `0x` prefix) |
+| `h`       | No       | Base64-encoded request headers                         |
+| `br`      | No       | Byte range (`length@offset`)                           |
+| `init`    | No       | Init segment URL (for fMP4)                            |
+| `init_br` | No       | Init segment byte range                                |
 
 #### `GET /health`
 

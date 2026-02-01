@@ -1,3 +1,5 @@
+use crate::{Error, Result};
+
 /// Represents the format of a media segment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SegmentFormat {
@@ -15,6 +17,17 @@ impl SegmentFormat {
             "mp4" | "m4s" | "m4f" | "cmfv" | "cmfa" => Self::Mp4,
             "aac" | "m4a" => Self::Aac,
             _ => Self::Unknown,
+        }
+    }
+
+    /// Detect format from file extension.
+    /// Returns an error for unknown extensions.
+    pub fn from_extension(ext: &str) -> Result<Self> {
+        match ext.to_lowercase().as_str() {
+            "ts" => Ok(Self::MpegTS),
+            "mp4" | "m4s" | "m4f" | "cmfv" | "cmfa" => Ok(Self::Mp4),
+            "aac" | "m4a" => Ok(Self::Aac),
+            _ => Err(Error::UnknownSegmentFormat(ext.to_string())),
         }
     }
 
