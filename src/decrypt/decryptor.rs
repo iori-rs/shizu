@@ -65,7 +65,9 @@ impl SegmentDecryptor {
                 self.decrypt_ssa_aac(data).await
             }
             (
-                SegmentDecryptMethod::SampleAesCtr | SegmentDecryptMethod::Cenc,
+                SegmentDecryptMethod::SampleAesCtr
+                | SegmentDecryptMethod::Cenc
+                | SegmentDecryptMethod::SampleAes,
                 SegmentFormat::Mp4,
             ) => self.decrypt_cenc(data, init_segment).await,
             _ => Err(Error::UnsupportedCombination {
