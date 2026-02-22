@@ -12,7 +12,7 @@ use crate::{
     stream::{StreamProcessor, TransformContext, rules},
 };
 
-/// Handle GET /manifest requests.
+/// Handle GET /manifest.m3u8 requests.
 pub async fn handle_manifest(
     State(state): State<AppState>,
     Query(params): Query<ManifestParams>,

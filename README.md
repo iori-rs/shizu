@@ -41,7 +41,7 @@ PORT=3000 shizu
 
 ### Endpoints
 
-#### `GET /manifest`
+#### `GET /manifest.m3u8`
 
 Fetches and transforms an HLS playlist, rewriting URLs to proxy through shizu.
 
@@ -78,7 +78,7 @@ Proxy an HLS stream:
 
 ```bash
 # Get the transformed manifest
-curl "http://localhost:8080/manifest?url=https://example.com/master.m3u8"
+curl "http://localhost:8080/manifest.m3u8?url=https://example.com/master.m3u8"
 ```
 
 Point your HLS player at the manifest URL and it will automatically fetch segments through the proxy.

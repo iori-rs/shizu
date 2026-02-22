@@ -119,6 +119,6 @@ mod tests {
         let result = rule.transform(line, &mut state, &context);
 
         assert_eq!(result.len(), 1);
-        assert!(result[0].contains("/manifest?"));
+        assert!(result[0].contains("/manifest.m3u8?"));
     }
 }

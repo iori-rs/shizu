@@ -28,7 +28,7 @@ pub async fn create_router() -> anyhow::Result<Router> {
     };
 
     let app = Router::new()
-        .route("/manifest", get(handle_manifest))
+        .route("/manifest.m3u8", get(handle_manifest))
         .route("/segment.{ext}", get(handle_segment))
         .route("/health", get(health_check))
         .layer(cors)

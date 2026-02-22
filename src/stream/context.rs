@@ -1,4 +1,4 @@
-use crate::{decrypt::DecryptionKey, server::SigningKey, Result};
+use crate::{Result, decrypt::DecryptionKey, server::SigningKey};
 use std::collections::HashMap;
 use url::Url;
 
@@ -58,7 +58,7 @@ impl TransformContext {
         self.original_url.join(relative).map_err(Into::into)
     }
 
-    /// Build a relative URL for the /manifest endpoint.
+    /// Build a relative URL for the /manifest.m3u8 endpoint.
     pub fn build_manifest_url(&self, target: &Url) -> String {
         let target_str = target.as_str();
         let mut params = vec![format!("url={}", urlencoding::encode(target_str))];
@@ -80,7 +80,7 @@ impl TransformContext {
         let signature = self.signing_key.sign(target_str);
         params.push(format!("sig={}", signature));
 
-        format!("/manifest?{}", params.join("&"))
+        format!("/manifest.m3u8?{}", params.join("&"))
     }
 
     /// Build a relative URL for the /segment endpoint.

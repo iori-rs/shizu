@@ -1,7 +1,7 @@
 use super::{LineType, ProcessorState, TransformContext, TransformRule};
 use crate::stream::state::PendingContext;
 
-/// Rule for rewriting variant playlist URLs to go through /manifest.
+/// Rule for rewriting variant playlist URLs to go through /manifest.m3u8.
 pub struct VariantUrlProxyRule;
 
 impl TransformRule for VariantUrlProxyRule {
@@ -92,7 +92,7 @@ mod tests {
         let result = rule.transform("720p/playlist.m3u8", &mut state, &context);
 
         assert_eq!(result.len(), 1);
-        assert!(result[0].starts_with("/manifest?"));
+        assert!(result[0].starts_with("/manifest.m3u8?"));
         assert!(result[0].contains("url=https%3A%2F%2Fcdn.example.com%2F720p%2Fplaylist.m3u8"));
     }
 }

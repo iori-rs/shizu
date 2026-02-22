@@ -15,8 +15,12 @@ pub use variant_proxy::VariantUrlProxyRule;
 /// Trait for transform rules.
 pub trait TransformRule: Send + Sync {
     /// Check if this rule should be applied.
-    fn matches(&self, line_type: &LineType, state: &ProcessorState, context: &TransformContext)
-        -> bool;
+    fn matches(
+        &self,
+        line_type: &LineType,
+        state: &ProcessorState,
+        context: &TransformContext,
+    ) -> bool;
 
     /// Transform the line.
     fn transform(
