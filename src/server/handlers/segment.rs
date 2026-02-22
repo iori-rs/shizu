@@ -49,29 +49,47 @@ pub async fn handle_segment(
     // Determine segment format from path extension or URL
     let format = SegmentFormat::from_extension(&path)?;
 
-    // Fetch init segment if needed (for fMP4)
-    let init_data = if let Some(ref init_url) = params.init {
+    // Create decryptor
+    let decryptor = SegmentDecryptor::new(method, key, iv);
+
+    // Fetch init segment if needed (for fMP4), caching both raw and decrypted forms
+    let (init_data, init_decrypted) = if let Some(ref init_url) = params.init {
         let init_byterange = params
             .init_br
             .as_ref()
             .map(|br| ByteRange::parse(br))
             .transpose()?;
 
-        Some(
-            state
-                .init_cache
-                .get_or_fetch(init_url, &headers, init_byterange.as_ref(), &state.client)
-                .await?,
-        )
+        let (raw, decrypted) = state
+            .init_cache
+            .get_or_fetch_with_decrypted(
+                init_url,
+                &headers,
+                init_byterange.as_ref(),
+                &params.k,
+                &state.client,
+                |raw| decryptor.decrypt_init(raw),
+            )
+            .await?;
+
+        (Some(raw), Some(decrypted))
     } else {
-        None
+        (None, None)
     };
 
-    // Fetch segment
-    let segment_data = state
-        .client
-        .fetch(&params.url, Some(&headers), byterange.as_ref())
-        .await?;
+    // Fetch segment, reusing init cache if the URL was already fetched as an init segment
+    let segment_data = match state.init_cache.get(&params.url, &headers, byterange.as_ref()) {
+        Some(cached) => {
+            tracing::debug!("Segment served from init cache: {}", params.url);
+            cached
+        }
+        None => {
+            state
+                .client
+                .fetch(&params.url, Some(&headers), byterange.as_ref())
+                .await?
+        }
+    };
 
     tracing::debug!(
         "Fetched segment: {} bytes, format: {:?}",
@@ -79,24 +97,9 @@ pub async fn handle_segment(
         format
     );
 
-    // Create decryptor and decrypt
-    let decryptor = SegmentDecryptor::new(method, key, iv);
-
-    // For fMP4, pre-compute and cache the decrypted init segment
-    let init_decrypted = match &init_data {
-        Some(raw_init) => {
-            let decryptor_ref = &decryptor;
-            let raw_init_ref = raw_init.clone();
-            Some(state.init_cache.get_or_compute_decrypted_init(
-                raw_init,
-                &params.k,
-                || decryptor_ref.decrypt_init(&raw_init_ref),
-            )?)
-        }
-        None => None,
-    };
-
-    let decrypted = decryptor.decrypt(segment_data, init_data, init_decrypted, format).await?;
+    let decrypted = decryptor
+        .decrypt(segment_data, init_data, init_decrypted, format)
+        .await?;
 
     tracing::debug!("Decrypted segment: {} bytes", decrypted.len());
 

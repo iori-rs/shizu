@@ -49,6 +49,17 @@ impl InitSegmentCache {
         }
     }
 
+    /// Look up a URL in the cache without fetching.
+    pub fn get(
+        &self,
+        url: &str,
+        headers: &HashMap<String, String>,
+        byterange: Option<&ByteRange>,
+    ) -> Option<Bytes> {
+        let key = CacheKey::new(url, headers, byterange);
+        self.cache.lock().unwrap().get(&key).cloned()
+    }
+
     /// Get init segment from cache or fetch from URL.
     pub async fn get_or_fetch(
         &self,
@@ -79,6 +90,22 @@ impl InitSegmentCache {
         }
 
         Ok(bytes)
+    }
+
+    /// Fetch the init segment (caching the raw bytes) and also return its decrypted form
+    /// (caching that too), in a single call.
+    pub async fn get_or_fetch_with_decrypted(
+        &self,
+        url: &str,
+        headers: &HashMap<String, String>,
+        byterange: Option<&ByteRange>,
+        key_str: &str,
+        client: &ProxyClient,
+        decrypt: impl FnOnce(&Bytes) -> Result<Bytes>,
+    ) -> Result<(Bytes, Bytes)> {
+        let raw = self.get_or_fetch(url, headers, byterange, client).await?;
+        let decrypted = self.get_or_compute_decrypted_init(&raw, key_str, || decrypt(&raw))?;
+        Ok((raw, decrypted))
     }
 
     /// Get decrypted init segment from cache, or compute and store it.
