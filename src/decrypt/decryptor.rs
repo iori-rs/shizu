@@ -1,5 +1,6 @@
 use crate::{Error, Result, hls::SegmentFormat};
 use bytes::Bytes;
+use iori_ssa::decrypt;
 use std::io::Cursor;
 
 use super::DecryptionKey;
@@ -111,7 +112,7 @@ impl SegmentDecryptor {
         let keys = self.key.to_mp4decrypt_keys()?;
 
         // Concatenate init + data if init provided
-        let full_data = match init_segment {
+        let full_data = match &init_segment {
             Some(init) => [init.as_ref(), data.as_ref()].concat(),
             None => data.to_vec(),
         };
@@ -123,10 +124,26 @@ impl SegmentDecryptor {
             .build()
             .map_err(|e| Error::DecryptionFailed(e.to_string()))?;
 
+        let init_decrypted = match &init_segment {
+            Some(init) => {
+                let decrypted = decryptor
+                    .decrypt(&init, None)
+                    .map_err(|e| Error::DecryptionFailed(e.to_string()))?;
+                Some(decrypted)
+            }
+            None => None,
+        };
+
         let decrypted = decryptor
             .decrypt(&full_data, None)
             .map_err(|e| Error::DecryptionFailed(e.to_string()))?;
 
-        Ok(Bytes::from(decrypted))
+        // Strip the prepended init segment from the output if it is unchanged
+        let result = match &init_decrypted {
+            Some(init) if decrypted.starts_with(init.as_ref()) => decrypted[init.len()..].to_vec(),
+            _ => decrypted,
+        };
+
+        Ok(Bytes::from(result))
     }
 }
