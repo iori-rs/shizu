@@ -1,6 +1,5 @@
 use crate::{Error, Result, hls::SegmentFormat};
 use bytes::Bytes;
-use iori_ssa::decrypt;
 use std::io::Cursor;
 
 use super::DecryptionKey;
@@ -56,6 +55,7 @@ impl SegmentDecryptor {
         &self,
         data: Bytes,
         init_segment: Option<Bytes>,
+        init_decrypted: Option<Bytes>,
         format: SegmentFormat,
     ) -> Result<Bytes> {
         match (&self.method, format) {
@@ -70,12 +70,26 @@ impl SegmentDecryptor {
                 | SegmentDecryptMethod::Cenc
                 | SegmentDecryptMethod::SampleAes,
                 SegmentFormat::Mp4,
-            ) => self.decrypt_cenc(data, init_segment).await,
+            ) => self.decrypt_cenc(data, init_segment, init_decrypted).await,
             _ => Err(Error::UnsupportedCombination {
                 method: self.method.as_str().to_string(),
                 format: format.as_str().to_string(),
             }),
         }
+    }
+
+    /// Decrypt just an init segment (used to pre-compute the decrypted header for caching).
+    pub fn decrypt_init(&self, init: &Bytes) -> Result<Bytes> {
+        let keys = self.key.to_mp4decrypt_keys()?;
+        let decryptor = mp4decrypt::Ap4CencDecryptingProcessor::new()
+            .keys(&keys)
+            .map_err(|e| Error::DecryptionFailed(e.to_string()))?
+            .build()
+            .map_err(|e| Error::DecryptionFailed(e.to_string()))?;
+        decryptor
+            .decrypt(init.as_ref(), None)
+            .map(Bytes::from)
+            .map_err(|e| Error::DecryptionFailed(e.to_string()))
     }
 
     async fn decrypt_ssa_ts(&self, data: Bytes) -> Result<Bytes> {
@@ -108,7 +122,12 @@ impl SegmentDecryptor {
         Ok(Bytes::from(output))
     }
 
-    async fn decrypt_cenc(&self, data: Bytes, init_segment: Option<Bytes>) -> Result<Bytes> {
+    async fn decrypt_cenc(
+        &self,
+        data: Bytes,
+        init_segment: Option<Bytes>,
+        init_decrypted: Option<Bytes>,
+    ) -> Result<Bytes> {
         let keys = self.key.to_mp4decrypt_keys()?;
 
         // Concatenate init + data if init provided
@@ -123,16 +142,6 @@ impl SegmentDecryptor {
             .map_err(|e| Error::DecryptionFailed(e.to_string()))?
             .build()
             .map_err(|e| Error::DecryptionFailed(e.to_string()))?;
-
-        let init_decrypted = match &init_segment {
-            Some(init) => {
-                let decrypted = decryptor
-                    .decrypt(&init, None)
-                    .map_err(|e| Error::DecryptionFailed(e.to_string()))?;
-                Some(decrypted)
-            }
-            None => None,
-        };
 
         let decrypted = decryptor
             .decrypt(&full_data, None)

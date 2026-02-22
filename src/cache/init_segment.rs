@@ -8,7 +8,7 @@ use std::{
     collections::HashMap,
 };
 
-use crate::{hls::ByteRange, proxy::ProxyClient, Result};
+use crate::{Result, hls::ByteRange, proxy::ProxyClient};
 
 /// Cache key for init segments.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -37,14 +37,15 @@ impl CacheKey {
 /// LRU cache for init segments.
 pub struct InitSegmentCache {
     cache: Mutex<LruCache<CacheKey, Bytes>>,
+    decrypted_cache: Mutex<LruCache<u64, Bytes>>,
 }
 
 impl InitSegmentCache {
     pub fn new(max_entries: usize) -> Self {
+        let cap = NonZeroUsize::new(max_entries).expect("max_entries must be > 0");
         Self {
-            cache: Mutex::new(LruCache::new(
-                NonZeroUsize::new(max_entries).expect("max_entries must be > 0"),
-            )),
+            cache: Mutex::new(LruCache::new(cap)),
+            decrypted_cache: Mutex::new(LruCache::new(cap)),
         }
     }
 
@@ -80,10 +81,42 @@ impl InitSegmentCache {
         Ok(bytes)
     }
 
+    /// Get decrypted init segment from cache, or compute and store it.
+    pub fn get_or_compute_decrypted_init(
+        &self,
+        raw_init: &Bytes,
+        key_str: &str,
+        compute: impl FnOnce() -> Result<Bytes>,
+    ) -> Result<Bytes> {
+        let hash = {
+            let mut hasher = DefaultHasher::new();
+            raw_init.as_ref().hash(&mut hasher);
+            key_str.hash(&mut hasher);
+            hasher.finish()
+        };
+
+        {
+            let mut cache = self.decrypted_cache.lock().unwrap();
+            if let Some(cached) = cache.get(&hash) {
+                tracing::debug!("Decrypted init segment cache hit");
+                return Ok(cached.clone());
+            }
+        }
+
+        let decrypted = compute()?;
+
+        {
+            let mut cache = self.decrypted_cache.lock().unwrap();
+            cache.put(hash, decrypted.clone());
+        }
+
+        Ok(decrypted)
+    }
+
     /// Clear the cache.
     pub fn clear(&self) {
-        let mut cache = self.cache.lock().unwrap();
-        cache.clear();
+        self.cache.lock().unwrap().clear();
+        self.decrypted_cache.lock().unwrap().clear();
     }
 
     /// Get current cache size.

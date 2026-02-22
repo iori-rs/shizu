@@ -81,7 +81,22 @@ pub async fn handle_segment(
 
     // Create decryptor and decrypt
     let decryptor = SegmentDecryptor::new(method, key, iv);
-    let decrypted = decryptor.decrypt(segment_data, init_data, format).await?;
+
+    // For fMP4, pre-compute and cache the decrypted init segment
+    let init_decrypted = match &init_data {
+        Some(raw_init) => {
+            let decryptor_ref = &decryptor;
+            let raw_init_ref = raw_init.clone();
+            Some(state.init_cache.get_or_compute_decrypted_init(
+                raw_init,
+                &params.k,
+                || decryptor_ref.decrypt_init(&raw_init_ref),
+            )?)
+        }
+        None => None,
+    };
+
+    let decrypted = decryptor.decrypt(segment_data, init_data, init_decrypted, format).await?;
 
     tracing::debug!("Decrypted segment: {} bytes", decrypted.len());
 
